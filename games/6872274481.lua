@@ -2153,6 +2153,7 @@ run(function()
 								if angle > (math.rad(AngleSlider.Value) / 2) then continue end
 
 								-- AirHit filter: only proceed if target is airborne (when enabled)
+								--[[
 								if AirHit.Enabled then
 									local hum = v.Character:FindFirstChildOfClass("Humanoid")
 									if not hum then continue end
@@ -2164,7 +2165,7 @@ run(function()
 									end
 									if not isAirborne then continue end
 									if math.random(1,100) > AirHitChance.Value then continue end
-								end
+								end]]
 
 								table.insert(attacked, {
 									Entity = v,
@@ -2512,7 +2513,7 @@ run(function()
 		Name = 'Swing only',
 		Tooltip = 'Only attacks while swinging manually'
 	})
-
+--[[
 	AirHit = Killaura:CreateToggle({
 		Name = 'AirHit+',
 		Function = function(callback)
@@ -2539,7 +2540,7 @@ run(function()
 		Default = 18,
 		Suffix = 'studs',
 		Visible = false
-	})
+	})]]
 
 	VerticalCheck = Killaura:CreateToggle({
 		Name = 'Velocity Check',

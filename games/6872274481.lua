@@ -1,5 +1,4 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local run = function(func)
 	func()
 end
@@ -16799,33 +16798,7 @@ run(function()
 		Tooltip = "Ambience 2"
 	})
 end)
-local AirHits = {Enabled = false}
-local AirHitsChance = {Value = 100}
 
--- This adds the module to the "Blatant" category (green section in your image)
-local AirHitsModule = vape.Categories.Blatant:CreateModule({
-    Name = 'AirHits',
-    Function = function(callback)
-        AirHits.Enabled = callback
-        -- We show/hide the slider depending on if the module is toggled on
-        if AirHitsChance.Object then 
-            AirHitsChance.Object.Visible = callback 
-        end
-    end,
-    Tooltip = 'Allows you to hit players while they are in the air.'
-})
-
--- This creates the slider inside the module's 3-dot menu
-AirHitsChance = AirHitsModule:CreateSlider({
-    Name = 'Chance',
-    Min = 1,
-    Max = 100,
-    Default = 100,
-    Suffix = '%',
-    Function = function(val)
-        AirHits.Value = val
-    end
-})
 run(function()
     local chatConnections = {}
     local TextChatService = game:GetService("TextChatService")

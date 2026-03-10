@@ -16882,9 +16882,5 @@ run(function()
                 end))
             end
         end,
-        Tooltip = 'Prevents you from being suffocated.'
-    })
-end)
-
-																								
---notif('Zenwear ☁️', 'Loaded!', 10)
+        Tooltip = 'Prevents you from being 
+		--notif('Zenwear ☁️', 'Loaded!', 10)

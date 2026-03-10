@@ -1999,7 +1999,6 @@ run(function()
 		Tooltip = 'Lets you sprint with a speed potion.'
 	})
 end)
-local Attacking
 run(function()
 	local Killaura
 	local killaurarangecirclepart

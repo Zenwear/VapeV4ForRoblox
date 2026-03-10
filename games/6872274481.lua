@@ -1,4 +1,5 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local run = function(func)
 	func()
 end
@@ -1999,11 +2000,9 @@ run(function()
 		Tooltip = 'Lets you sprint with a speed potion.'
 	})
 end)
+local Attacking
 run(function()
 	local Killaura
-	local killaurarangecirclepart
-	local killaurarangecircle
-	local killauracolor
 	local Targets
 	local Sort
 	local SwingRange
@@ -2127,25 +2126,6 @@ run(function()
 
 				local swingCooldown = 0
 				repeat
-
-					if killaurarangecirclepart and entitylib.isAlive then
-	local root = entitylib.character.HumanoidRootPart
-	local size = AttackRange.Value * 2
-
-	killaurarangecirclepart.Size = Vector3.new(0.2, size, size)
-	killaurarangecirclepart.Position = root.Position - Vector3.new(0, entitylib.character.Humanoid.HipHeight, 0)
-
-	killaurarangecirclepart.Color = Color3.fromHSV(
-		killauracolor.Hue,
-		killauracolor.Sat,
-		killauracolor.Value
-	)
-
-	killaurarangecirclepart.Transparency = 1 - killauracolor.Opacity
-end
-
-
-
 					local attacked, sword, meta = {}, getAttackData()
 					Attacking = false
 					store.KillauraTarget = nil
@@ -2318,7 +2298,7 @@ end
 	UpdateRate = Killaura:CreateSlider({
 		Name = 'Update rate',
 		Min = 1,
-		Max = 540,
+		Max = 120,
 		Default = 60,
 		Suffix = 'hz'
 	})
@@ -2513,46 +2493,22 @@ end
 		end,
 		Tooltip = 'Only attacks when the sword is held'
 	})
-	killaurarangecircle = Killaura:CreateToggle({
-	Name = "Range Visualizer",
-	Function = function(enabled)
-		if enabled then
-			killaurarangecirclepart = Instance.new("Part")
-			killaurarangecirclepart.Shape = Enum.PartType.Cylinder
-			killaurarangecirclepart.Anchored = true
-			killaurarangecirclepart.CanCollide = false
-			killaurarangecirclepart.Material = Enum.Material.Neon
-			killaurarangecirclepart.Orientation = Vector3.new(0, 0, 90)
-			killaurarangecirclepart.Parent = workspace
-		else
-			if killaurarangecirclepart then
-				killaurarangecirclepart:Destroy()
-				killaurarangecirclepart = nil
-			end
-		end
-	end
-})
-
-killauracolor = Killaura:CreateColorSlider({
-	Name = "Range Color",
-	DefaultHue = 0.6,
-	DefaultOpacity = 0.5
-})
-
-	--[[LegitAura = Killaura:CreateToggle({
+	LegitAura = Killaura:CreateToggle({
 		Name = 'Swing only',
 		Tooltip = 'Only attacks while swinging manually'
-	})]]
+	})
 end)
+
 	
-	run(function()
+run(function()
 	local Value
 	local CameraDir
 	local start
 	local JumpTick, JumpSpeed, Direction = tick(), 0
 	local projectileRemote = {InvokeServer = function() end}
 	task.spawn(function()
-
+		projectileRemote = bedwars.Client:Get(remotes.FireProjectile).instance
+	end)
 	
 	local function launchProjectile(item, pos, proj, speed, dir)
 		if not pos then return end
@@ -2762,8 +2718,8 @@ end)
 	Value = LongJump:CreateSlider({
 		Name = 'Speed',
 		Min = 1,
-		Max = 37,
-		Default = 37,
+		Max = 50,
+		Default = 50,
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
 		end
@@ -2772,6 +2728,7 @@ end)
 		Name = 'Camera Direction'
 	})
 end)
+
 	
 run(function()
 	local NoFall
@@ -5249,30 +5206,6 @@ run(function()
 	TrapDisabler = vape.Categories.Utility:CreateModule({
 		Name = 'TrapDisabler',
 		Tooltip = 'Disables Snap Traps'
-	})
-end)
-	
-run(function()
-	vape.Categories.World:CreateModule({
-		Name = 'Anti-AFK',
-		Function = function(callback)
-			if callback then
-				for _, v in getconnections(lplr.Idled) do
-					v:Disconnect()
-				end
-	
-				for _, v in getconnections(runService.Heartbeat) do
-					if type(v.Function) == 'function' and table.find(debug.getconstants(v.Function), remotes.AfkStatus) then
-						v:Disconnect()
-					end
-				end
-	
-				bedwars.Client:Get(remotes.AfkStatus):SendToServer({
-					afk = false
-				})
-			end
-		end,
-		Tooltip = 'Lets you stay ingame without getting kicked'
 	})
 end)
 	

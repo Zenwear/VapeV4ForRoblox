@@ -18508,7 +18508,7 @@ run(function()
 		abilityRemote = eventsFolder and eventsFolder:FindFirstChild("useAbility")
 	end)
 
-	AutoBerserker = vape.Categories.kits:CreateModule({
+	AutoBerserker = vape.Categories.Blatent:CreateModule({
 		Name = 'AutoBerserker',
 		Function = function(callback)
 			if callback then

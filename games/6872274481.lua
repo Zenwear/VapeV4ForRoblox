@@ -18320,30 +18320,7 @@ run(function()
 	HotbarRoundRadius.Object.Visible = false;
 	HotbarHighlightColor.Object.Visible = false;
 end)
-run(function()
-	local Ambience2 = vape.Categories.Render:CreateModule({
-		Name = "sunset",
-		Function = function(callback)
-			local lighting = game:GetService("Lighting")
-			if callback then
-				local sky = Instance.new("Sky")
-				sky.Name = "Ambience2_Sky"
-				local id = "rbxassetid://106124354971466"
-				sky.SkyboxBk = id
-				sky.SkyboxDn = id
-				sky.SkyboxFt = id
-				sky.SkyboxLf = id
-				sky.SkyboxRt = id
-				sky.SkyboxUp = id
-				sky.Parent = lighting
-			else
-				local sky = lighting:FindFirstChild("Ambience2_Sky")
-				if sky then sky:Destroy() end
-			end
-		end,
-		Tooltip = "Ambience 2"
-	})
-end)
+
 
 run(function()
     local chatConnections = {}

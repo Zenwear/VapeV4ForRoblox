@@ -19292,7 +19292,7 @@ end)
     local Delay
 	local UpdateRate
 	local Health
-	BetterMelody = vape.Categories.Kits:CreateModule({
+	BetterMelody = vape.Categories.Kit:CreateModule({
 		Name = "BetterMelody",
 		Tooltip = 'makes u godtier at melody boi',
 		Function = function(callback)

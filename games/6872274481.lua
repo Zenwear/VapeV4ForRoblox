@@ -19680,6 +19680,539 @@ run(function()
     })
     AttackRange.Object.Visible = false
 end)
+run(function()
+    local Lian
+    local AutoAbility
+    local AutoUlt
+    local RangeSlider
+    local DelaySlider
+    local UltEnemyCount
+    local UltRange
+    local MinSwordCount
+    local UltCooldown
+    
+    Lian = vape.Categories.Kit:CreateModule({
+        Name = 'AutoLian',
+        Function = function(callback)
+            if callback then
+                task.spawn(function()
+                    repeat
+                        if entitylib.isAlive then
+                            local swordCount = lplr:GetAttribute('SwordCount') or 0
+                            
+                            if swordCount >= MinSwordCount.Value then
+                                if AutoUlt.Enabled and swordCount >= 3 then
+                                    local nearbyEnemies = 0
+                                    local localPos = entitylib.character.RootPart.Position
+                                    
+                                    for _, v in entitylib.List do
+                                        if v.Targetable and (v.RootPart.Position - localPos).Magnitude <= UltRange.Value then
+                                            nearbyEnemies = nearbyEnemies + 1
+                                        end
+                                    end
+                                    
+                                    if nearbyEnemies >= UltEnemyCount.Value then
+                                        pcall(function()
+                                            game:GetService("ReplicatedStorage")
+                                                :WaitForChild("events-@easy-games/game-core:shared/game-core-networking@getEvents.Events")
+                                                :WaitForChild("useAbility")
+                                                :FireServer("DRAGON_SWORD_ULT")
+                                        end)
+                                        task.wait(UltCooldown.Value)
+                                    end
+                                end
+                                
+                                if AutoAbility.Enabled and swordCount > 0 then
+                                    local plr = entitylib.EntityPosition({
+                                        Range = RangeSlider.Value,
+                                        Part = 'RootPart',
+                                        Players = true,
+                                        NPCs = true,
+                                        Sort = sortmethods.Health
+                                    })
+                                    
+                                    if plr and bedwars.AbilityController:canUseAbility('dragon_sword') then
+                                        bedwars.AbilityController:useAbility('dragon_sword')
+                                        task.wait(0.5)
+                                    end
+                                end
+                            end
+                        end
+                        
+                        task.wait(DelaySlider.Value)
+                    until not Lian.Enabled
+                end)
+            end
+        end,
+        Tooltip = 'Auto use Dragon Sword abilities'
+    })
+    
+    AutoAbility = Lian:CreateToggle({
+        Name = 'Auto Ability',
+        Default = true,
+        Tooltip = 'Auto use dragon sword on nearest enemy'
+    })
+    
+    AutoUlt = Lian:CreateToggle({
+        Name = 'Auto Ultimate',
+        Default = true,
+        Tooltip = 'Auto use ult when conditions met'
+    })
+    
+    RangeSlider = Lian:CreateSlider({
+        Name = 'Ability Range',
+        Min = 10,
+        Max = 50,
+        Default = 30,
+        Suffix = ' studs',
+        Tooltip = 'Range to use dragon sword ability'
+    })
+    
+    DelaySlider = Lian:CreateSlider({
+        Name = 'Delay',
+        Min = 0.1,
+        Max = 1,
+        Default = 0.1,
+        Decimal = 10,
+        Suffix = 's'
+    })
+    
+    UltEnemyCount = Lian:CreateSlider({
+        Name = 'Ult Enemy Count',
+        Min = 1,
+        Max = 5,
+        Default = 2,
+        Tooltip = 'Enemies nearby needed to ult'
+    })
+    
+    UltRange = Lian:CreateSlider({
+        Name = 'Ult Range',
+        Min = 10,
+        Max = 50,
+        Default = 30,
+        Suffix = ' studs',
+        Tooltip = 'Range to check for enemies before ulting'
+    })
+    
+    MinSwordCount = Lian:CreateSlider({
+        Name = 'Min Sword Count',
+        Min = 1,
+        Max = 3,
+        Default = 1,
+        Tooltip = 'Minimum swords before using abilities'
+    })
+    
+    UltCooldown = Lian:CreateSlider({
+        Name = 'Ult Cooldown',
+        Min = 1,
+        Max = 5,
+        Default = 2,
+        Suffix = 's',
+        Tooltip = 'Wait time after using ult'
+    })
+end)
+run(function()
+    local Nazar
+    local AutoEmpower
+    local EmpowerTimeout
+    local AutoConsume
+    local HealThreshold
+    local MinLifeForce
+    local ConsumeDelay
+    
+    local empoweredMode = false
+    local lastHitTime = 0
+    local lastConsumeTime = 0
+    
+    local function enableEmpower()
+        if not empoweredMode and bedwars.AbilityController:canUseAbility('enable_life_force_attack') then
+            bedwars.AbilityController:useAbility('enable_life_force_attack')
+            empoweredMode = true
+        end
+    end
+    
+    local function disableEmpower()
+        if empoweredMode and bedwars.AbilityController:canUseAbility('disable_life_force_attack') then
+            bedwars.AbilityController:useAbility('disable_life_force_attack')
+            empoweredMode = false
+        end
+    end
+    
+    local function tryConsumeLifeForce()
+        if not entitylib.isAlive then return end
+        
+        local currentTime = workspace:GetServerTimeNow()
+        
+        if (currentTime - lastConsumeTime) < ConsumeDelay.Value then
+            return
+        end
+        
+        local health = lplr.Character:GetAttribute('Health') or 100
+        local maxHealth = lplr.Character:GetAttribute('MaxHealth') or 100
+        local lifeForce = lplr:GetAttribute('LifeForce') or 0
+        
+        local healthPercent = health / maxHealth
+        
+        if healthPercent < (HealThreshold.Value / 100) and lifeForce >= MinLifeForce.Value and health < maxHealth then
+            if bedwars.AbilityController:canUseAbility('consume_life_foce') then
+                bedwars.AbilityController:useAbility('consume_life_foce')
+                lastConsumeTime = currentTime
+            end
+        end
+    end
+    
+    Nazar = vape.Categories.Kit:CreateModule({
+        Name = 'AutoNazar',
+        Function = function(callback)
+            if callback then
+                Nazar:Clean(vapeEvents.EntityDamageEvent.Event:Connect(function(damageTable)
+                    if not entitylib.isAlive or not AutoEmpower.Enabled then return end
+                    
+                    local attacker = playersService:GetPlayerFromCharacter(damageTable.fromEntity)
+                    local victim = playersService:GetPlayerFromCharacter(damageTable.entityInstance)
+                    
+                    if attacker == lplr and victim and victim ~= lplr then
+                        lastHitTime = workspace:GetServerTimeNow()
+                        enableEmpower()
+                    end
+                end))
+                
+                Nazar:Clean(vapeEvents.EntityDeathEvent.Event:Connect(function(deathTable)
+                    if not entitylib.isAlive or not AutoEmpower.Enabled then return end
+                    
+                    local killer = playersService:GetPlayerFromCharacter(deathTable.fromEntity)
+                    local killed = playersService:GetPlayerFromCharacter(deathTable.entityInstance)
+                    
+                    if killer == lplr and killed and killed ~= lplr then
+                        disableEmpower()
+                    end
+                end))
+                
+                task.spawn(function()
+                    repeat
+                        if entitylib.isAlive then
+                            local currentTime = workspace:GetServerTimeNow()
+                            
+                            if AutoEmpower.Enabled and empoweredMode and (currentTime - lastHitTime) >= EmpowerTimeout.Value then
+                                disableEmpower()
+                            end
+                            
+                            if AutoConsume.Enabled then
+                                tryConsumeLifeForce()
+                            end
+                        else
+                            if empoweredMode then
+                                disableEmpower()
+                            end
+                        end
+                        
+                        task.wait(0.1)
+                    until not Nazar.Enabled
+                end)
+            else
+                if empoweredMode then
+                    disableEmpower()
+                end
+                empoweredMode = false
+                lastHitTime = 0
+                lastConsumeTime = 0
+            end
+        end,
+        Tooltip = 'Automatically manages Nazar abilities'
+    })
+    
+    AutoEmpower = Nazar:CreateToggle({
+        Name = 'Auto Empower',
+        Default = true,
+        Tooltip = 'Auto enable/disable empowered attacks on hit/kill',
+        Function = function(callback)
+            if EmpowerTimeout and EmpowerTimeout.Object then 
+                EmpowerTimeout.Object.Visible = callback 
+            end
+        end
+    })
+    
+    EmpowerTimeout = Nazar:CreateSlider({
+        Name = 'Empower Timeout',
+        Min = 1,
+        Max = 10,
+        Default = 3,
+        Suffix = 's',
+        Tooltip = 'Disable empower after this many seconds without hitting',
+        Visible = false
+    })
+    
+    AutoConsume = Nazar:CreateToggle({
+        Name = 'Auto Consume',
+        Default = true,
+        Tooltip = 'Auto consume life force to heal when low HP',
+        Function = function(callback)
+            if HealThreshold and HealThreshold.Object then 
+                HealThreshold.Object.Visible = callback 
+            end
+            if MinLifeForce and MinLifeForce.Object then 
+                MinLifeForce.Object.Visible = callback 
+            end
+            if ConsumeDelay and ConsumeDelay.Object then 
+                ConsumeDelay.Object.Visible = callback 
+            end
+        end
+    })
+    
+    HealThreshold = Nazar:CreateSlider({
+        Name = 'Heal Threshold',
+        Min = 10,
+        Max = 100,
+        Default = 55,
+        Suffix = '%',
+        Tooltip = 'Consume life force when HP is below this %',
+        Visible = false
+    })
+    
+    MinLifeForce = Nazar:CreateSlider({
+        Name = 'Min Life Force',
+        Min = 1,
+        Max = 100,
+        Default = 25,
+        Tooltip = 'Minimum life force required to heal',
+        Visible = false
+    })
+    
+    ConsumeDelay = Nazar:CreateSlider({
+        Name = 'Consume Cooldown',
+        Min = 0,
+        Max = 10,
+        Default = 3,
+        Suffix = 's',
+        Tooltip = 'Cooldown between consuming life force',
+        Visible = false
+    })
+end)
+run(function()
+    local Miner
+    local CollectionToggle
+    local DelaySlider
+    local RangeSlider
+    local ESPToggle
+    local ESPBackground
+    local ESPColor = {}
+    local Folder = Instance.new('Folder')
+    Folder.Parent = vape.gui
+    local minerCache = {}
+    local collectedPetrified = {}
+    
+    local function isOnMyTeam(petrifiedModel)
+        if not petrifiedModel then return false end
+        local myTeam = lplr:GetAttribute('Team')
+        local theirTeam = petrifiedModel:GetAttribute('Team')
+        
+        if not theirTeam or not myTeam then return true end
+        
+        return theirTeam == myTeam
+    end
+    
+    local function collectPetrified(v)
+        local petrifyId = v:GetAttribute('PetrifyId')
+        
+        if not petrifyId or collectedPetrified[petrifyId] then return end
+        if isOnMyTeam(v) then return end
+        
+        collectedPetrified[petrifyId] = true
+        
+        local animTrack
+        pcall(function()
+            animTrack = bedwars.GameAnimationUtil:playAnimation(lplr, bedwars.AnimationType.MINER_MINE_STONE)
+        end)
+        
+        task.wait(DelaySlider.Value)
+        
+        if animTrack then
+            pcall(function()
+                animTrack:Stop()
+                animTrack:Destroy()
+            end)
+        end
+        
+        pcall(function()
+            bedwars.Client:Get(remotes.MinerDig):SendToServer({
+                petrifyId = petrifyId
+            })
+        end)
+        
+        task.delay(2, function() collectedPetrified[petrifyId] = nil end)
+    end
+    
+    local function Added(v, petrifiedModel)
+        if isOnMyTeam(petrifiedModel) then return end
+        if minerCache[petrifiedModel] then return end
+        
+        local billboard = Instance.new('BillboardGui')
+        billboard.Parent = Folder
+        billboard.Name = 'petrified-player'
+        billboard.StudsOffsetWorldSpace = Vector3.new(0, 6, 0)
+        billboard.Size = UDim2.fromOffset(100, 40)
+        billboard.AlwaysOnTop = true
+        billboard.ClipsDescendants = false
+        billboard.Adornee = v
+        
+        local blur = addBlur(billboard)
+        blur.Visible = ESPBackground.Enabled
+        
+        local frame = Instance.new('Frame')
+        frame.Size = UDim2.fromScale(1, 1)
+        frame.BackgroundColor3 = Color3.fromHSV(ESPColor.Hue, ESPColor.Sat, ESPColor.Value)
+        frame.BackgroundTransparency = 1 - (ESPBackground.Enabled and ESPColor.Opacity or 0)
+        frame.BorderSizePixel = 0
+        frame.Parent = billboard
+        
+        local uicorner = Instance.new('UICorner')
+        uicorner.CornerRadius = UDim.new(0, 4)
+        uicorner.Parent = frame
+        
+        local text = Instance.new('TextLabel')
+        text.Size = UDim2.fromScale(1, 1)
+        text.Position = UDim2.fromScale(0.5, 0.5)
+        text.AnchorPoint = Vector2.new(0.5, 0.5)
+        text.BackgroundTransparency = 1
+        text.Text = "Petrified: " .. petrifiedModel.Name
+        text.TextColor3 = Color3.new(1, 1, 1)
+        text.TextScaled = true
+        text.Font = Enum.Font.GothamBold
+        text.Parent = frame
+        
+        minerCache[petrifiedModel] = billboard
+    end
+    
+    local function Removed(petrifiedModel)
+        if minerCache[petrifiedModel] then
+            minerCache[petrifiedModel]:Destroy()
+            minerCache[petrifiedModel] = nil
+        end
+    end
+    
+    local function setupESP()
+        for _, model in pairs(collectionService:GetTagged('petrified-player')) do
+            if model.PrimaryPart then
+                Added(model.PrimaryPart, model)
+            end
+        end
+        
+        Miner:Clean(collectionService:GetInstanceAddedSignal('petrified-player'):Connect(function(model)
+            if model.PrimaryPart then
+                Added(model.PrimaryPart, model)
+            end
+        end))
+        
+        Miner:Clean(collectionService:GetInstanceRemovedSignal('petrified-player'):Connect(function(model)
+            Removed(model)
+        end))
+    end
+    
+    Miner = vape.Categories.Kit:CreateModule({
+        Name = 'AutoMiner',
+        Function = function(callback)
+            if callback then
+                task.spawn(function()
+                    repeat
+                        if entitylib.isAlive and CollectionToggle.Enabled then
+                            for _, model in pairs(collectionService:GetTagged('petrified-player')) do
+                                if model:IsA("Model") and model.PrimaryPart then
+                                    if (entitylib.character.RootPart.Position - model.PrimaryPart.Position).Magnitude <= RangeSlider.Value then
+                                        collectPetrified(model)
+                                    end
+                                end
+                            end
+                        end
+                        task.wait(0.3)
+                    until not Miner.Enabled
+                end)
+                
+                if ESPToggle.Enabled then
+                    setupESP()
+                end
+            else
+                Folder:ClearAllChildren()
+                table.clear(minerCache)
+                table.clear(collectedPetrified)
+            end
+        end,
+        Tooltip = 'Auto-collect petrified players with ESP'
+    })
+    
+    CollectionToggle = Miner:CreateToggle({
+        Name = 'Auto Collect',
+        Default = true,
+        Function = function(callback)
+            if DelaySlider and DelaySlider.Object then DelaySlider.Object.Visible = callback end
+            if RangeSlider and RangeSlider.Object then RangeSlider.Object.Visible = callback end
+        end
+    })
+    
+    DelaySlider = Miner:CreateSlider({
+        Name = 'Delay',
+        Min = 0, Max = 10, Default = 4, Suffix = ' seconds',
+        Tooltip = 'Animation plays for this duration before collecting',
+        Visible = false
+    })
+    
+    RangeSlider = Miner:CreateSlider({
+        Name = 'Range',
+        Min = 1, Max = 30, Default = 12, Suffix = ' studs',
+        Visible = false
+    })
+    
+    ESPToggle = Miner:CreateToggle({
+        Name = 'Petrified ESP',
+        Default = false,
+        Tooltip = 'Shows petrified player locations',
+        Function = function(callback)
+            if ESPBackground and ESPBackground.Object then ESPBackground.Object.Visible = callback end
+            if ESPColor and ESPColor.Object then ESPColor.Object.Visible = (callback and ESPBackground.Enabled) end
+            
+            if Miner.Enabled then
+                if callback then 
+                    setupESP() 
+                else
+                    Folder:ClearAllChildren()
+                    table.clear(minerCache)
+                end
+            end
+        end
+    })
+    
+    ESPBackground = Miner:CreateToggle({
+        Name = 'Background',
+        Default = true,
+        Visible = false,
+        Function = function(callback)
+            if ESPColor and ESPColor.Object then ESPColor.Object.Visible = callback end
+            for _, v in minerCache do
+                if v and v:FindFirstChild("Frame") then
+                    local blur = v:FindFirstChild("BlurEffect")
+                    if blur then blur.Visible = callback end
+                    v.Frame.BackgroundTransparency = 1 - (callback and ESPColor.Opacity or 0)
+                end
+            end
+        end
+    })
+    
+    ESPColor = Miner:CreateColorSlider({
+        Name = 'Background Color',
+        DefaultValue = 0,
+        DefaultOpacity = 0.5,
+        Visible = false,
+        Function = function(hue, sat, val, opacity)
+            for _, v in minerCache do
+                if v and v:FindFirstChild("Frame") then
+                    v.Frame.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
+                    v.Frame.BackgroundTransparency = 1 - opacity
+                end
+            end
+        end,
+        Darker = true
+    })
+end)
+
 
 
 

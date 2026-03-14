@@ -3032,6 +3032,7 @@ run(function()
 											if not res then
 												FireDelays[item.itemType] = tick()
 											else
+                                                res.Parent = replicatedStorage
 												local shoot = itemMeta.launchSound
 												shoot = shoot and shoot[math.random(1, #shoot)] or nil
 												if shoot then
